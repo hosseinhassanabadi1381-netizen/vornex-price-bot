@@ -68,15 +68,18 @@ def handle_update(update):
         send_message(chat_id, reply)
 
 
-def check_auth(aut
+def check_auth(auth):
     if not auth:
         return False
 
-    admin_user = os.environ.get("ADMIN_USER")
-    admin_password = os.environ.get("ADMIN_PASSWORD")
+    admin_user = os.environ.get("ADMIN_USER", "").strip()
+    admin_password = os.environ.get("ADMIN_PASSWORD", "")
+
+    if not admin_user or not admin_password:
+        return False
 
     return (
-        auth.username == admin_user
+        auth.username.strip() == admin_user
         and auth.password == admin_password
     )
 
@@ -144,11 +147,13 @@ def admin():
 
     if request.method == "POST":
         prices["gemini"] = request.form.get(
-            "gemini", prices["gemini"]
+            "gemini",
+            prices["gemini"]
         )
 
         prices["chatgpt"] = request.form.get(
-            "chatgpt", prices["chatgpt"]
+            "chatgpt",
+            prices["chatgpt"]
         )
 
         prices["config_unlimited_1"] = request.form.get(
@@ -192,20 +197,166 @@ def admin():
         return """
         <div dir="rtl"
              style="font-family:Arial;text-align:center;margin-top:50px">
+
             <h2>✅ قیمت‌ها با موفقیت ذخیره شدند</h2>
-            <a href="/admin">بازگشت به پنل مدیریت</a>
+
+            <a href="/admin">
+                بازگشت به پنل مدیریت
+            </a>
+
         </div>
         """
 
     return render_template_string("""
-def check_auth(auth):
-    if not auth:
-        return False
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
 
-    admin_user = os.environ.get("ADMIN_USER", "").strip()
-    admin_password = os.environ.get("ADMIN_PASSWORD", "").strip()
+<head>
 
-    return (
-        auth.username.strip() == admin_user
-        and auth.password == admin_password
+<meta charset="UTF-8">
+
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
+
+<title>پنل مدیریت VORNEX</title>
+
+<style>
+
+body {
+    font-family: Arial, sans-serif;
+    max-width: 600px;
+    margin: 30px auto;
+    padding: 20px;
+    background: #f4f4f4;
+}
+
+.box {
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+}
+
+h2 {
+    text-align: center;
+}
+
+label {
+    display: block;
+    margin-top: 15px;
+    font-weight: bold;
+}
+
+input {
+    width: 100%;
+    padding: 12px;
+    margin-top: 6px;
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 15px;
+}
+
+button {
+    width: 100%;
+    padding: 14px;
+    margin-top: 25px;
+    border: 0;
+    border-radius: 10px;
+    background: #111;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="box">
+
+<h2>⚡️ پنل مدیریت VORNEX</h2>
+
+<form method="POST">
+
+<label>Gemini</label>
+
+<input
+name="gemini"
+value="{{ prices['gemini'] }}"
+>
+
+<label>ChatGPT</label>
+
+<input
+name="chatgpt"
+value="{{ prices['chatgpt'] }}"
+>
+
+<label>کانفیگ نامحدود ۱ ماهه</label>
+
+<input
+name="config_unlimited_1"
+value="{{ prices['config_unlimited_1'] }}"
+>
+
+<label>کانفیگ نامحدود ۲ ماهه</label>
+
+<input
+name="config_unlimited_2"
+value="{{ prices['config_unlimited_2'] }}"
+>
+
+<label>کانفیگ نامحدود ۳ ماهه</label>
+
+<input
+name="config_unlimited_3"
+value="{{ prices['config_unlimited_3'] }}"
+>
+
+<label>کانفیگ حجمی</label>
+
+<input
+name="config_gb"
+value="{{ prices['config_gb'] }}"
+>
+
+<label>کانفیگ گیم</label>
+
+<input
+name="gaming"
+value="{{ prices['gaming'] }}"
+>
+
+<label>ادیت و افزایش کیفیت عکس</label>
+
+<input
+name="edit"
+value="{{ prices['edit'] }}"
+>
+
+<button type="submit">
+💾 ذخیره قیمت‌ها
+</button>
+
+</form>
+
+</div>
+
+</body>
+
+</html>
+""", prices=prices)
+
+
+if __name__ == "__main__":
+
+    port = int(
+        os.environ.get("PORT", 10000)
+    )
+
+    app.run(
+        host="0.0.0.0",
+        port=port
     )
