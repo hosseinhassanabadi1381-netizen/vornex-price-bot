@@ -8,6 +8,7 @@ API = f"https://api.telegram.org/bot{TOKEN}"
 
 app = Flask(__name__)
 
+
 def send_message(chat_id, text):
     requests.post(
         f"{API}/sendMessage",
@@ -18,10 +19,10 @@ def send_message(chat_id, text):
         timeout=10
     )
 
+
 def handle_update(update):
     message = update.get("message", {})
-    chat = message.get("chat", {})
-    chat_id = chat.get("id")
+    chat_id = message.get("chat", {}).get("id")
     text = message.get("text", "").strip().lower()
 
     if not chat_id:
@@ -43,13 +44,15 @@ def handle_update(update):
 🎨 خدمات ادیت و افزایش کیفیت عکس
 💬 برای قیمت: @Hasanabadi1385
 
-🛒 سفارش: @VORNEXNET
-🎧 پشتیبانی: @Hasanabadi1385"""
+🎧 پشتیبانی: @Hasanabadi1385
+📢 کانال: @VORNEXNET"""
         )
+
 
 @app.route("/", methods=["GET"])
 def home():
     return "VORNEX Bot is running!"
+
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
@@ -62,6 +65,25 @@ def webhook():
         ).start()
 
     return "OK"
+
+
+@app.route("/set-webhook", methods=["GET"])
+def set_webhook():
+    public_url = os.environ.get("RENDER_EXTERNAL_URL")
+
+    if not public_url:
+        return "RENDER_EXTERNAL_URL not found", 500
+
+    webhook_url = f"{public_url}/webhook"
+
+    result = requests.get(
+        f"{API}/setWebhook",
+        params={"url": webhook_url},
+        timeout=10
+    )
+
+    return result.text
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
