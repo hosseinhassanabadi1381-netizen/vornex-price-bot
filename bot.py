@@ -2,8 +2,7 @@ import os
 import json
 import threading
 import requests
-from functools import wraps
-from flask import Flask, request, render_template_string, Response
+from flask import Flask, request, render_template_string
 
 TOKEN = os.environ["BOT_TOKEN"]
 API = f"https://api.telegram.org/bot{TOKEN}"
@@ -68,42 +67,6 @@ def handle_update(update):
         send_message(chat_id, reply)
 
 
-def check_auth(auth):
-    if not auth:
-        return False
-
-    admin_user = os.environ.get("ADMIN_USER", "").strip()
-    admin_password = os.environ.get("ADMIN_PASSWORD", "")
-
-    if not admin_user or not admin_password:
-        return False
-
-    return (
-        auth.username.strip() == admin_user
-        and auth.password == admin_password
-    )
-
-
-def requires_auth(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        auth = request.authorization
-
-        if not check_auth(auth):
-            return Response(
-                "🔐 ورود به پنل مدیریت VORNEX",
-                401,
-                {
-                    "WWW-Authenticate":
-                    'Basic realm="VORNEX Admin"'
-                }
-            )
-
-        return f(*args, **kwargs)
-
-    return decorated
-
-
 @app.route("/", methods=["GET"])
 def home():
     return "VORNEX Bot is running!"
@@ -141,19 +104,17 @@ def set_webhook():
 
 
 @app.route("/admin", methods=["GET", "POST"])
-@requires_auth
 def admin():
     prices = load_prices()
 
     if request.method == "POST":
+
         prices["gemini"] = request.form.get(
-            "gemini",
-            prices["gemini"]
+            "gemini", prices["gemini"]
         )
 
         prices["chatgpt"] = request.form.get(
-            "chatgpt",
-            prices["chatgpt"]
+            "chatgpt", prices["chatgpt"]
         )
 
         prices["config_unlimited_1"] = request.form.get(
@@ -195,8 +156,20 @@ def admin():
             )
 
         return """
-        <div dir="rtl"
-             style="font-family:Arial;text-align:center;margin-top:50px">
+        <!DOCTYPE html>
+        <html lang="fa" dir="rtl">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport"
+                  content="width=device-width, initial-scale=1.0">
+            <title>VORNEX</title>
+        </head>
+
+        <body style="
+            font-family:Arial;
+            text-align:center;
+            margin-top:60px;
+        ">
 
             <h2>✅ قیمت‌ها با موفقیت ذخیره شدند</h2>
 
@@ -204,11 +177,13 @@ def admin():
                 بازگشت به پنل مدیریت
             </a>
 
-        </div>
+        </body>
+        </html>
         """
 
     return render_template_string("""
 <!DOCTYPE html>
+
 <html lang="fa" dir="rtl">
 
 <head>
@@ -265,7 +240,6 @@ button {
     background: #111;
     color: white;
     font-size: 16px;
-    cursor: pointer;
 }
 
 </style>
@@ -281,59 +255,51 @@ button {
 <form method="POST">
 
 <label>Gemini</label>
-
 <input
-name="gemini"
-value="{{ prices['gemini'] }}"
+    name="gemini"
+    value="{{ prices['gemini'] }}"
 >
 
 <label>ChatGPT</label>
-
 <input
-name="chatgpt"
-value="{{ prices['chatgpt'] }}"
+    name="chatgpt"
+    value="{{ prices['chatgpt'] }}"
 >
 
 <label>کانفیگ نامحدود ۱ ماهه</label>
-
 <input
-name="config_unlimited_1"
-value="{{ prices['config_unlimited_1'] }}"
+    name="config_unlimited_1"
+    value="{{ prices['config_unlimited_1'] }}"
 >
 
 <label>کانفیگ نامحدود ۲ ماهه</label>
-
 <input
-name="config_unlimited_2"
-value="{{ prices['config_unlimited_2'] }}"
+    name="config_unlimited_2"
+    value="{{ prices['config_unlimited_2'] }}"
 >
 
 <label>کانفیگ نامحدود ۳ ماهه</label>
-
 <input
-name="config_unlimited_3"
-value="{{ prices['config_unlimited_3'] }}"
+    name="config_unlimited_3"
+    value="{{ prices['config_unlimited_3'] }}"
 >
 
 <label>کانفیگ حجمی</label>
-
 <input
-name="config_gb"
-value="{{ prices['config_gb'] }}"
+    name="config_gb"
+    value="{{ prices['config_gb'] }}"
 >
 
 <label>کانفیگ گیم</label>
-
 <input
-name="gaming"
-value="{{ prices['gaming'] }}"
+    name="gaming"
+    value="{{ prices['gaming'] }}"
 >
 
 <label>ادیت و افزایش کیفیت عکس</label>
-
 <input
-name="edit"
-value="{{ prices['edit'] }}"
+    name="edit"
+    value="{{ prices['edit'] }}"
 >
 
 <button type="submit">
@@ -347,6 +313,7 @@ value="{{ prices['edit'] }}"
 </body>
 
 </html>
+
 """, prices=prices)
 
 
