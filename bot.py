@@ -1,12 +1,20 @@
 import os
+import json
 import threading
 import requests
-from flask import Flask, request
+from flask import Flask, request, render_template_string
 
 TOKEN = os.environ["BOT_TOKEN"]
 API = f"https://api.telegram.org/bot{TOKEN}"
 
 app = Flask(__name__)
+
+PRICES_FILE = "prices.json"
+
+
+def load_prices():
+    with open(PRICES_FILE, "r", encoding="utf-8") as f:
+        return json.load(f)
 
 
 def send_message(chat_id, text):
@@ -28,25 +36,35 @@ def handle_update(update):
     if not chat_id:
         return
 
+    prices = load_prices()
+
     if text in ["/price", "قیمت"]:
-        send_message(
-            chat_id,
-            """⚡️ قیمت محصولات VORNEX
+        reply = f"""⚡️ قیمت محصولات VORNEX
 
 🤖 Gemini
-💰 ۷۵۰ هزار تومان
+💰 {prices["gemini"]}
+
+💬 ChatGPT
+💰 {prices["chatgpt"]}
 
 🌐 کانفیگ نامحدود
-▫️ ۱ ماهه: ۲۵۰ هزار تومان
-▫️ ۲ ماهه: ۳۵۰ هزار تومان
-▫️ ۳ ماهه: ۴۵۰ هزار تومان
+▫️ ۱ ماهه: {prices["config_unlimited_1"]}
+▫️ ۲ ماهه: {prices["config_unlimited_2"]}
+▫️ ۳ ماهه: {prices["config_unlimited_3"]}
 
-🎨 خدمات ادیت و افزایش کیفیت عکس
-💬 برای قیمت: @Hasanabadi1385
+📦 کانفیگ حجمی
+💰 {prices["config_gb"]}
+
+🎮 کانفیگ گیم
+💰 {prices["gaming"]}
+
+🎨 ادیت و افزایش کیفیت عکس
+💰 {prices["edit"]}
 
 🎧 پشتیبانی: @Hasanabadi1385
 📢 کانال: @VORNEXNET"""
-        )
+
+        send_message(chat_id, reply)
 
 
 @app.route("/", methods=["GET"])
@@ -83,6 +101,113 @@ def set_webhook():
     )
 
     return result.text
+
+
+@app.route("/admin", methods=["GET", "POST"])
+def admin():
+    prices = load_prices()
+
+    if request.method == "POST":
+        prices["gemini"] = request.form.get("gemini", prices["gemini"])
+        prices["chatgpt"] = request.form.get("chatgpt", prices["chatgpt"])
+        prices["config_unlimited_1"] = request.form.get(
+            "config_unlimited_1", prices["config_unlimited_1"]
+        )
+        prices["config_unlimited_2"] = request.form.get(
+            "config_unlimited_2", prices["config_unlimited_2"]
+        )
+        prices["config_unlimited_3"] = request.form.get(
+            "config_unlimited_3", prices["config_unlimited_3"]
+        )
+        prices["config_gb"] = request.form.get(
+            "config_gb", prices["config_gb"]
+        )
+        prices["gaming"] = request.form.get(
+            "gaming", prices["gaming"]
+        )
+        prices["edit"] = request.form.get(
+            "edit", prices["edit"]
+        )
+
+        with open(PRICES_FILE, "w", encoding="utf-8") as f:
+            json.dump(prices, f, ensure_ascii=False, indent=2)
+
+        return "✅ قیمت‌ها با موفقیت ذخیره شدند. برای برگشت به پنل /admin را باز کنید."
+
+    return render_template_string("""
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>پنل مدیریت VORNEX</title>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    max-width: 600px;
+    margin: 30px auto;
+    padding: 20px;
+    background: #f4f4f4;
+}
+.box {
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+}
+input {
+    width: 100%;
+    padding: 12px;
+    margin: 6px 0 15px;
+    box-sizing: border-box;
+}
+button {
+    width: 100%;
+    padding: 14px;
+    border: 0;
+    border-radius: 10px;
+    background: #111;
+    color: white;
+    font-size: 16px;
+}
+</style>
+</head>
+<body>
+<div class="box">
+<h2>⚡️ پنل مدیریت VORNEX</h2>
+
+<form method="POST">
+
+<label>Gemini</label>
+<input name="gemini" value="{{ prices['gemini'] }}">
+
+<label>ChatGPT</label>
+<input name="chatgpt" value="{{ prices['chatgpt'] }}">
+
+<label>کانفیگ نامحدود ۱ ماهه</label>
+<input name="config_unlimited_1" value="{{ prices['config_unlimited_1'] }}">
+
+<label>کانفیگ نامحدود ۲ ماهه</label>
+<input name="config_unlimited_2" value="{{ prices['config_unlimited_2'] }}">
+
+<label>کانفیگ نامحدود ۳ ماهه</label>
+<input name="config_unlimited_3" value="{{ prices['config_unlimited_3'] }}">
+
+<label>کانفیگ حجمی</label>
+<input name="config_gb" value="{{ prices['config_gb'] }}">
+
+<label>کانفیگ گیم</label>
+<input name="gaming" value="{{ prices['gaming'] }}">
+
+<label>ادیت و افزایش کیفیت عکس</label>
+<input name="edit" value="{{ prices['edit'] }}">
+
+<button type="submit">💾 ذخیره قیمت‌ها</button>
+
+</form>
+</div>
+</body>
+</html>
+""", prices=prices)
 
 
 if __name__ == "__main__":
